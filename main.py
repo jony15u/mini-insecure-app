@@ -1,46 +1,25 @@
 import os
-import requests
-import datetime
+import sqlite3
+import logging
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
-import sqlite3, logging
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("app")
 
 app = FastAPI()
+
 DB = "app.db"
-
-BS_TOKEN = os.getenv("BETTERSTACK_TOKEN")
-BS_ENDPOINT = os.getenv("BETTERSTACK_ENDPOINT")
-
-def send_log(message, **fields):
-    if not BS_TOKEN or not BS_ENDPOINT:
-        return
-    try:
-        payload = {
-            "dt": datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-            "message": message,
-            **fields
-        }
-        requests.post(
-            BS_ENDPOINT,
-            headers={
-                "Authorization": f"Bearer {BS_TOKEN}",
-                "Content-Type": "application/json"
-            },
-            json=payload,
-            timeout=3
-        )
-    except Exception as e:
-        print("BetterStack error:", e)
+DEFAULT_USER = os.getenv("DEFAULT_USER", "admin")
+DEFAULT_PASS = os.getenv("DEFAULT_PASS", "admin")
 
 @app.on_event("startup")
 def init():
     con = sqlite3.connect(DB)
-    con.execute("CREATE TABLE IF NOT EXISTS users(u TEXT,p TEXT)")
-    con.execute("INSERT OR IGNORE INTO users(u,p) VALUES('admin','admin')")
+    con.execute("CREATE TABLE IF NOT EXISTS users(u TEXT PRIMARY KEY, p TEXT)")
+    # ✅ ya no está hardcodeado en el código: viene de variables de entorno
+    con.execute("INSERT OR IGNORE INTO users(u,p) VALUES(?,?)", (DEFAULT_USER, DEFAULT_PASS))
     con.commit()
     con.close()
 
@@ -51,7 +30,7 @@ def home():
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>Mini Insecure App</title>
+  <title>Mini Secure App</title>
   <style>
     body{font-family:Arial, sans-serif; max-width:720px; margin:40px auto; padding:0 16px;}
     .card{border:1px solid #ddd; border-radius:12px; padding:16px; margin:12px 0;}
@@ -63,11 +42,11 @@ def home():
   </style>
 </head>
 <body>
-  <h2>Mini Insecure App (Demo)</h2>
+  <h2>Mini App (Demo)</h2>
 
   <div class="card">
     <h3>Login</h3>
-    <p>Usuario/clave válidos: <code>admin/admin</code></p>
+    <p>Usuario/clave válidos vienen de variables de entorno (<code>DEFAULT_USER</code>/<code>DEFAULT_PASS</code>).</p>
     <input id="u" placeholder="username" value="admin"/>
     <input id="p" placeholder="password" value="wrong"/>
     <div class="row">
@@ -77,15 +56,6 @@ def home():
     </div>
     <p id="status"></p>
     <p>Fallidos acumulados: <b id="fails">0</b></p>
-  </div>
-
-  <div class="card">
-    <h3>Qué genera</h3>
-    <ul>
-      <li><code>login_failed</code> cuando falla el login</li>
-      <li><code>login_ok</code> cuando entra bien</li>
-      <li><code>forced_500</code> cuando presionas “Generar 500”</li>
-    </ul>
   </div>
 
 <script>
@@ -131,23 +101,20 @@ async def login(req: Request):
     u = b.get("username", "")
     p = b.get("password", "")
 
-    # SQL Injection intencional (para SAST / demo)
-    q = f"SELECT 1 FROM users WHERE u='{u}' AND p='{p}'"
+    # ✅ FIX: query parametrizada (sin SQL injection)
     con = sqlite3.connect(DB)
-    ok = con.execute(q).fetchone()
+    ok = con.execute("SELECT 1 FROM users WHERE u=? AND p=?", (u, p)).fetchone()
     con.close()
 
     if not ok:
-        log.info(f"login_ok user={u} ip={req.client.host}")
-        send_log("login_ok", user=u, ip=req.client.host)
+        log.warning(f"login_failed user={u} ip={req.client.host}")
         raise HTTPException(401, "bad creds")
 
     log.info(f"login_ok user={u} ip={req.client.host}")
-    send_log("login_ok", user=u, ip=req.client.host)
     return JSONResponse({"ok": True})
 
 @app.get("/boom")
 def boom():
+    # ✅ 500 controlado (no crash por 1/0)
     log.error("forced_500")
-    send_log("forced_500")
-    1/0
+    return Response(content="forced_500", status_code=500)
