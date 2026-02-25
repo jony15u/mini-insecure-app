@@ -5,6 +5,8 @@ import logging
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from fastapi import status
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("app")
 
@@ -95,7 +97,12 @@ async function boom(){
 </html>
 """
 
-@app.post("/login")
+@app.post(
+    "/login",
+    responses={
+        401: {"description": "Invalid credentials"}
+    }
+)
 async def login(req: Request):
     b = await req.json()
     u = b.get("username", "")
