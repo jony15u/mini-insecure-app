@@ -1,3 +1,6 @@
+import os
+import requests
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 import sqlite3, logging
@@ -7,6 +10,28 @@ log = logging.getLogger("app")
 
 app = FastAPI()
 DB = "app.db"
+
+BS_TOKEN = os.getenv("BETTERSTACK_TOKEN")
+BS_ENDPOINT = os.getenv("BETTERSTACK_ENDPOINT")
+
+def send_log(message, **fields):
+    if not BS_TOKEN or not BS_ENDPOINT:
+        return
+    try:
+        requests.post(
+            BS_ENDPOINT,
+            headers={
+                "Authorization": f"Bearer {BS_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "message": message,
+                **fields
+            },
+            timeout=2
+        )
+    except:
+        pass
 
 @app.on_event("startup")
 def init():
@@ -110,13 +135,16 @@ async def login(req: Request):
     con.close()
 
     if not ok:
-        log.warning(f"login_failed user={u} ip={req.client.host}")
+        log.info(f"login_ok user={u} ip={req.client.host}")
+        send_log("login_ok", user=u, ip=req.client.host)
         raise HTTPException(401, "bad creds")
 
     log.info(f"login_ok user={u} ip={req.client.host}")
+    send_log("login_ok", user=u, ip=req.client.host)
     return JSONResponse({"ok": True})
 
 @app.get("/boom")
 def boom():
     log.error("forced_500")
+    send_log("forced_500")
     1/0
