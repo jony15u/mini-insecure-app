@@ -1,5 +1,6 @@
 import os
 import requests
+import datetime
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -18,20 +19,22 @@ def send_log(message, **fields):
     if not BS_TOKEN or not BS_ENDPOINT:
         return
     try:
+        payload = {
+            "dt": datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "message": message,
+            **fields
+        }
         requests.post(
             BS_ENDPOINT,
             headers={
                 "Authorization": f"Bearer {BS_TOKEN}",
                 "Content-Type": "application/json"
             },
-            json={
-                "message": message,
-                **fields
-            },
-            timeout=2
+            json=payload,
+            timeout=3
         )
-    except:
-        pass
+    except Exception as e:
+        print("BetterStack error:", e)
 
 @app.on_event("startup")
 def init():
