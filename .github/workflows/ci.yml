@@ -20,14 +20,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install test deps
+      - name: Install pytest
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov
+          pip install pytest
 
-      - name: Run tests with coverage
+      - name: Run tests
         run: |
-          pytest tests --cov=proyecto --cov-report=xml:coverage.xml
+          pytest -q
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
@@ -37,5 +37,4 @@ jobs:
           args: >
             -Dsonar.organization=jony15u
             -Dsonar.projectKey=jony15u_mini-insecure-app
-            -Dsonar.sources=proyecto
-            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.sources=.
