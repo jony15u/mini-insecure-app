@@ -27,7 +27,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=. --cov-report=xml:coverage.xml
+          pytest tests --cov=proyecto --cov-report=xml:coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
@@ -37,5 +37,5 @@ jobs:
           args: >
             -Dsonar.organization=jony15u
             -Dsonar.projectKey=jony15u_mini-insecure-app
-            -Dsonar.sources=.
+            -Dsonar.sources=proyecto
             -Dsonar.python.coverage.reportPaths=coverage.xml
