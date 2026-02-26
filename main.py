@@ -16,7 +16,7 @@ DB = "app.db"
 DEFAULT_USER = os.getenv("DEFAULT_USER", "admin")
 DEFAULT_PASS = os.getenv("DEFAULT_PASS", "admin")
 
-DEMO_PASSWORD = "SuperSecret123"
+
 
 @app.on_event("startup")
 def init():
@@ -46,7 +46,7 @@ def home():
   </style>
 </head>
 <body>
-  <h2>Mini App (Demo)</h2>
+  <h2>Mini App (UTP-FISC)</h2>
 
   <div class="card">
     <h3>Login</h3>
