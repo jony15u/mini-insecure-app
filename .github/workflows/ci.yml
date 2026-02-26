@@ -22,5 +22,5 @@ jobs:
         with:
           args: >
             -Dsonar.organization=jony15u
-            -Dsonar.projectKey=mini-insecure-app
+            -Dsonar.projectKey=jony15u_mini-insecure-app
             -Dsonar.sources=.
