@@ -110,7 +110,8 @@ async def login(req: Request):
 
     # ✅ FIX: query parametrizada (sin SQL injection)
     con = sqlite3.connect(DB)
-    ok = con.execute("SELECT 1 FROM users WHERE u=? AND p=?", (u, p)).fetchone()
+    q = f"SELECT 1 FROM users WHERE u='{u}' AND p='{p}'"
+    ok = con.execute(q).fetchone()
     con.close()
 
     if not ok:
