@@ -16,6 +16,8 @@ DB = "app.db"
 DEFAULT_USER = os.getenv("DEFAULT_USER", "admin")
 DEFAULT_PASS = os.getenv("DEFAULT_PASS", "admin")
 
+DEMO_SECRET = "SuperSecret123"
+
 
 
 @app.on_event("startup")
